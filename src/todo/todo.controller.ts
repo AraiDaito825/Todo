@@ -1,43 +1,49 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post } from '@nestjs/common';
-import { TodoPropertyDto } from './dto/todo-property.dto'
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Put } from '@nestjs/common';
+import { TodoPropertyDto } from './dto/todo-property.dto';
 import { TodoStatusPipe } from "./pipe/todo-status.pipe";
+import { TodoService } from './todo.service'; 
+import { Todo as TodoModel } from '@prisma/client';
 
 
 @Controller('todo')
 export class TodoController {
 
+  constructor(
+    private readonly todoService: TodoService,
+  ){}
+
   @Get()
   getTodo() {
-    return "getTodo Success!"
+    return this.todoService.todos();
   }
 
   @Get('/:id')
   getTodoById(
     @Param('id', ParseIntPipe) id: number
-  ) {
-    return `getTodoById Success! Parameter [id:${id}]`
+  ): Promise<TodoModel> {
+    return this.todoService.todo({ id: Number(id) });
   }
 
   @Post()
-  createTodo(
-    @Body('title') title: string,
-    @Body('body') body: string
-  ) {
-    return `createTodo Success! Parameter [title:${title}, body:${body}]`
+  async createTodo(
+    @Body() todoData: { title: string; body: string},
+  ): Promise<TodoModel> {
+    return this.todoService.createTodo(todoData);
+  }
+
+  @Put('/:id')
+  async updateTodo(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() todoData: { title?: string; body?: string},
+  ): Promise<TodoModel> {
+    return this.todoService.updateTodo({
+      where: { id: Number(id) },
+      data: todoData,
+    });
   }
 
   @Delete('/:id')
-  deleteTodo(
-    @Param('id', ParseIntPipe) id:number
-  ) {
-    return `deleteTodo Success! Parameter [id:${id}]`
-  }
-
-  @Patch('/:id')
-  updateTodo(
-    @Param('id', ParseIntPipe) id: number,
-    @Body('status') status: string
-  ) {
-    return `updateTodo Success! Parameter [id:${id}, status:${status}]`
+  async deleteTodo(@Param('id', ParseIntPipe) id: number): Promise<TodoModel>{
+    return this.todoService.deleteTodo({ id: Number(id) });
   }
 }
